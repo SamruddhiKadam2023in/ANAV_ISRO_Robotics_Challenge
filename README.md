@@ -1,14 +1,14 @@
-# 🚁 ISRO Robotics Challenge (Autonomous Quadcopter)
+# 🚁 ISRO Robotics Challenge (Autonomous Drone System)
 
 > An experimental autonomy toolkit for vision-assisted navigation, state estimation, and collision-aware path planning.
 
-This repository brings together software prototypes developed for an autonomous quadcopter workflow: terrain perception, Kalman-filter state estimation, and RRT/RRT* motion planning. It serves as a practical foundation for GPS-denied aerial robotics research and simulation.
+This repository brings together software prototypes developed for an autonomous drone workflow: terrain perception, Kalman-filter state estimation, RRT/RRT* motion planning, and a ground control station GUI. It serves as a practical foundation for GPS-denied aerial robotics research and simulation.
 
 ---
 
 ## 📌 Overview
 
-The project is organized around four cooperating capabilities that a GPS-denied drone would need: seeing terrain features (perception), estimating its own position despite noisy sensors (estimation), planning a safe route around obstacles (planning), and reacting visually to stay stabilized (control). Each capability is implemented as an independent, runnable prototype rather than a single integrated flight stack.
+The project is organized around five cooperating capabilities that a GPS-denied drone would need: seeing terrain features (perception), estimating its own position despite noisy sensors (estimation), planning a safe route around obstacles (planning), reacting visually to stay stabilized (control), and being commanded/monitored from the ground (GUI). Each capability is implemented as an independent, runnable prototype rather than a single integrated flight stack.
 
 ---
 
@@ -18,6 +18,7 @@ The project is organized around four cooperating capabilities that a GPS-denied 
 - **State estimation**: a 2D Kalman filter prototype for smoothing noisy position measurements
 - **Path planning**: RRT* implementations (standalone, and combined with Kalman-filtered position estimates)
 - **Flight-control prototype**: webcam-based visual feedback and proportional-control experiment
+- **Ground Control Station GUI**: a PySide6 desktop GUI for monitoring and commanding the drone over MAVLink/TCP
 - **Training data**: a labelled 2-class terrain-image dataset (`craters`, `safespots`) under `data/yolo/`
 
 ---
@@ -44,6 +45,11 @@ Combined detection output distinguishing hazardous crater regions (red) from via
 
 <img src="assets/results/landing-zone-detection.jpg" alt="Craters and safe spots both highlighted on a terrain image" width="700">
 
+### 🖥️ Ground Control Station GUI
+Desktop GUI for monitoring telemetry and sending flight commands to the drone.
+
+<img src="GUI/GUI%20Image.jpeg" alt="Ground control station GUI showing drone telemetry and controls" width="700">
+
 > 🔗 For the full training/inference code behind the crater and safe-spot detection shown above, see the dedicated [Crater_and_Safe_Spot_Detection_using_YOLOv8](https://github.com/SamruddhiKadam2023in/Crater_and_Safe_Spot_Detection_using_YOLOv8) repository.
 
 ---
@@ -66,23 +72,28 @@ ISRO-robotics-2025/
 │       ├── images/train/
 │       ├── labels/train/
 │       └── data.yaml                            # 2-class YOLO config: craters, safespots
+├── GUI/
+│   ├── gcs_gui.py                               # PySide6 ground control station GUI
+│   └── GUI Image.jpeg                           # ⚠️ has a space in its name — see note below
 ├── src/
 │   ├── flight_control/
 │   │   └── visual_odometry.py
 │   ├── path_planning_navigation/
 │   │   ├── RRT_STAR.py
 │   │   ├── Kalman_RRTSTAR.py
-│   │   ├── RRT_Path_Planning.png               
-│   │   └── Path_Planning with Safe_Spot.png     
+│   │   ├── RRT_Path_Planning.png
+│   │   └── Path_Planning with Safe_Spot.png
 │   ├── state_estimation/
 │   │   └── kalman_filter_demo.py
 │   └── terrain_perception/
 │       ├── crater_detection.py
-│       ├── Creator_Detection.png               
-│       └── Creator_and_Safespot_Detection.png   
+│       ├── Creator_Detection.png
+│       └── Creator_and_Safespot_Detection.png
 ├── .gitignore
 └── requirements.txt
 ```
+
+> ⚠️ **`GUI Image.jpeg` contains a space in its filename.** The image embed above works around it using `%20` encoding, but consider renaming it to `GUI_Image.jpeg` for consistency with the rest of the repo — just remember to update the image path here if you do.
 
 ---
 
@@ -94,6 +105,8 @@ ISRO-robotics-2025/
 | Object detection | Ultralytics YOLOv8 |
 | Numerical computing | NumPy |
 | Plotting/visualization | Matplotlib |
+| GUI | PySide6 |
+| Comms | MAVLink over TCP |
 | Language | Python 3.9+ |
 
 ---
@@ -106,9 +119,10 @@ python src/state_estimation/kalman_filter_demo.py
 python src/terrain_perception/crater_detection.py
 python src/path_planning_navigation/Kalman_RRTSTAR.py
 python src/flight_control/visual_odometry.py
+python GUI/gcs_gui.py
 ```
 
-> Some demos open an OpenCV or Matplotlib window. The visual-odometry prototype additionally requires an accessible webcam.
+> Some demos open an OpenCV or Matplotlib window. The visual-odometry prototype additionally requires an accessible webcam. The GUI requires PySide6 and a reachable drone/companion-computer endpoint to show live telemetry.
 
 ---
 
@@ -121,6 +135,7 @@ python src/flight_control/visual_odometry.py
 | Integrated planning | `src/path_planning_navigation/Kalman_RRTSTAR.py` | Combines Kalman-filtered position estimates with RRT* planning over a grayscale terrain map image. |
 | Terrain perception | `src/terrain_perception/crater_detection.py` | Detects circular crater-like terrain features using Gaussian blur, morphological opening, Canny edges, and Hough Circle Transform. |
 | Flight control | `src/flight_control/visual_odometry.py` | Uses live webcam contour detection and a proportional controller to compute stabilization corrections relative to frame center. |
+| Ground control station | `GUI/gcs_gui.py` | PySide6 desktop GUI for monitoring telemetry and issuing flight commands, communicating with the drone/companion computer over MAVLink via TCP. |
 | Crater/safe-spot detection | [Crater_and_Safe_Spot_Detection_using_YOLOv8](https://github.com/SamruddhiKadam2023in/Crater_and_Safe_Spot_Detection_using_YOLOv8) *(separate repo)* | A YOLOv8 model trained on 2 classes (`craters`, `safespots`) — responsible for the bounding-box detections and the "Path to Safe Spot" app seen in the Results section above. |
 
 ---
@@ -160,3 +175,4 @@ This project is open-source. Feel free to use, modify, and distribute it as per 
 - Built using [OpenCV](https://opencv.org/) for perception and control, and [Ultralytics YOLOv8](https://github.com/ultralytics/ultralytics) for crater/safe-spot detection.
 - Path planning based on the RRT/RRT* family of sampling-based motion planners.
 - State estimation based on the classical discrete Kalman filter.
+- Ground control station built with [PySide6](https://doc.qt.io/qtforpython/), communicating over MAVLink.
